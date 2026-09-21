@@ -26,21 +26,34 @@ DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis
 df = pd.read_csv(DATA_URL)
 
 # 날짜를 진짜 날짜형으로 변환
-df["날짜"] = pd.to_datetime(df["날짜"].astype(str), format="%Y%m%d")
+df["날짜"] = pd.to_datetime(
+    df["날짜"].astype(str),
+    format="%Y%m%d"
+)
 
 # 숫자형 열 변환
-numeric_columns = ["순위", "영화코드", "일관객", "누적관객", "스크린수", "상영횟수"]
+numeric_columns = [
+    "순위",
+    "영화코드",
+    "일관객",
+    "누적관객",
+    "스크린수",
+    "상영횟수"
+]
 
 for column in numeric_columns:
-    df[column] = pd.to_numeric(df[column], errors="coerce")
+    df[column] = pd.to_numeric(
+        df[column],
+        errors="coerce"
+    )
 
 # 날짜순으로 정렬
 df = df.sort_values(["날짜", "순위"])
 
 
-# --------------------------------------------------
+# ==================================================
 # 그래프 1. 영화별 일관객 변화
-# --------------------------------------------------
+# ==================================================
 
 st.header("1. 영화별 일관객 변화")
 
@@ -55,7 +68,9 @@ selected_movie = st.selectbox(
     movie_list
 )
 
-movie_df = df[df["영화명"] == selected_movie].sort_values("날짜")
+movie_df = df[
+    df["영화명"] == selected_movie
+].sort_values("날짜")
 
 fig = px.line(
     movie_df,
@@ -70,7 +85,11 @@ fig = px.line(
 )
 
 fig.update_traces(
-    hovertemplate="날짜: %{x|%Y-%m-%d}<br>일관객: %{y:,}명<extra></extra>"
+    hovertemplate=(
+        "날짜: %{x|%Y-%m-%d}"
+        "<br>일관객: %{y:,}명"
+        "<extra></extra>"
+    )
 )
 
 fig.update_layout(
@@ -83,7 +102,10 @@ fig.update_layout(
     )
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(
+    fig,
+    use_container_width=True
+)
 
 st.markdown("**이 그래프로 알 수 있는 것**")
 st.caption(
@@ -91,19 +113,99 @@ st.caption(
 )
 
 
-# --------------------------------------------------
-# 앞으로 추가할 그래프 영역
-# --------------------------------------------------
+# ==================================================
+# 그래프 2. 일관객 합계 상위 5편 비교
+# ==================================================
 
 st.divider()
 
-st.header("2. 다음 그래프")
+st.header("2. 일관객 합계가 가장 큰 영화 5편")
 
-st.info("앞으로 시간에 관한 새로운 그래프를 이곳에 추가합니다.")
+st.write(
+    "이 기간 동안 일관객을 모두 합산해 관객 수가 가장 큰 5편의 "
+    "날짜별 일관객 변화를 비교합니다."
+)
 
+# 영화별 일관객 합계 계산 → 상위 5편 선정
+top5_movies = (
+    df.groupby("영화명", as_index=False)["일관객"]
+    .sum()
+    .sort_values("일관객", ascending=False)
+    .head(5)["영화명"]
+    .tolist()
+)
+
+# 상위 5편의 데이터만 추출
+top5_df = df[
+    df["영화명"].isin(top5_movies)
+].sort_values("날짜")
+
+fig2 = px.line(
+    top5_df,
+    x="날짜",
+    y="일관객",
+    color="영화명",
+    markers=True,
+    labels={
+        "날짜": "날짜",
+        "일관객": "일관객 수",
+        "영화명": "영화"
+    },
+    title="일관객 합계 상위 5편의 날짜별 일관객 변화"
+)
+
+fig2.update_traces(
+    hovertemplate=(
+        "영화: %{fullData.name}"
+        "<br>날짜: %{x|%Y-%m-%d}"
+        "<br>일관객: %{y:,}명"
+        "<extra></extra>"
+    )
+)
+
+fig2.update_layout(
+    hovermode="x unified",
+    xaxis=dict(
+        tickformat="%Y-%m-%d"
+    ),
+    yaxis=dict(
+        tickformat=","
+    ),
+    legend=dict(
+        title="영화",
+        itemclick="toggle",
+        itemdoubleclick="toggleothers"
+    )
+)
+
+st.plotly_chart(
+    fig2,
+    use_container_width=True
+)
+
+st.markdown("**이 그래프로 알 수 있는 것**")
+st.caption(
+    "이 기간 동안 관객을 많이 모은 영화 5편이 날짜별로 어떤 관객 추이를 보였는지 비교할 수 있습니다."
+)
+
+
+# ==================================================
+# 앞으로 추가할 그래프 영역
+# ==================================================
 
 st.divider()
 
 st.header("3. 다음 그래프")
 
-st.info("앞으로 새로운 그래프를 이곳에 추가합니다.")
+st.info(
+    "앞으로 시간에 관한 새로운 그래프를 이곳에 추가합니다."
+)
+
+
+st.divider()
+
+st.header("4. 다음 그래프")
+
+st.info(
+    "앞으로 새로운 그래프를 이곳에 추가합니다."
+)
