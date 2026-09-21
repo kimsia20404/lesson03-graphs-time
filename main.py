@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 
 # ==================================================
@@ -96,12 +97,8 @@ fig1.update_traces(
 
 fig1.update_layout(
     hovermode="x unified",
-    xaxis=dict(
-        tickformat="%Y-%m-%d"
-    ),
-    yaxis=dict(
-        tickformat=","
-    )
+    xaxis=dict(tickformat="%Y-%m-%d"),
+    yaxis=dict(tickformat=",")
 )
 
 st.plotly_chart(
@@ -165,12 +162,8 @@ fig2.update_traces(
 
 fig2.update_layout(
     hovermode="x unified",
-    xaxis=dict(
-        tickformat="%Y-%m-%d"
-    ),
-    yaxis=dict(
-        tickformat=","
-    ),
+    xaxis=dict(tickformat="%Y-%m-%d"),
+    yaxis=dict(tickformat=","),
     legend=dict(
         title="영화",
         itemclick="toggle",
@@ -249,12 +242,8 @@ for _, row in top3_days.iterrows():
 
 fig3.update_layout(
     hovermode="x unified",
-    xaxis=dict(
-        tickformat="%Y-%m-%d"
-    ),
-    yaxis=dict(
-        tickformat=","
-    )
+    xaxis=dict(tickformat="%Y-%m-%d"),
+    yaxis=dict(tickformat=",")
 )
 
 st.plotly_chart(
@@ -281,7 +270,6 @@ st.write(
     "관객이 가장 많았던 영화 10편을 비교합니다."
 )
 
-# 영화별 일관객 합계와 10위권에 등장한 날짜 수 계산
 movie_total = (
     df.groupby("영화명")
     .agg(
@@ -291,7 +279,6 @@ movie_total = (
     .reset_index()
 )
 
-# 일관객 합계 기준 TOP 10
 top10_movies = (
     movie_total
     .sort_values("일관객합계", ascending=False)
@@ -299,7 +286,6 @@ top10_movies = (
     .copy()
 )
 
-# 관객이 많은 영화가 위에 오도록 역순으로 정렬
 top10_movies = top10_movies.sort_values(
     "일관객합계",
     ascending=True
@@ -317,7 +303,6 @@ fig4 = px.bar(
     title="영화별 일관객 합계 TOP 10"
 )
 
-# 마우스를 올렸을 때 표시
 fig4.update_traces(
     customdata=top10_movies[["등장일수"]].values,
     hovertemplate=(
@@ -329,12 +314,8 @@ fig4.update_traces(
 )
 
 fig4.update_layout(
-    xaxis=dict(
-        tickformat=","
-    ),
-    yaxis=dict(
-        categoryorder="total ascending"
-    )
+    xaxis=dict(tickformat=","),
+    yaxis=dict(categoryorder="total ascending")
 )
 
 st.plotly_chart(
@@ -349,12 +330,95 @@ st.caption(
 
 
 # ==================================================
+# 그래프 5. 월 × 요일별 일관객 합계 히트맵
+# ==================================================
+
+st.divider()
+
+st.header("5. 월 × 요일별 일관객 합계")
+
+st.write(
+    "월과 요일에 따라 일관객이 얼마나 달라지는지 히트맵으로 살펴봅니다."
+)
+
+# 월과 요일 추출
+df["월"] = df["날짜"].dt.month
+
+# pandas의 weekday:
+# 월요일=0, 화요일=1, ..., 일요일=6
+weekday_names = [
+    "월요일",
+    "화요일",
+    "수요일",
+    "목요일",
+    "금요일",
+    "토요일",
+    "일요일"
+]
+
+df["요일"] = df["날짜"].dt.weekday.map(
+    dict(enumerate(weekday_names))
+)
+
+# 월 × 요일별 일관객 합계
+heatmap_data = (
+    df.groupby(["월", "요일"])["일관객"]
+    .sum()
+    .unstack(fill_value=0)
+)
+
+# 요일 순서를 월요일 → 일요일로 고정
+heatmap_data = heatmap_data.reindex(
+    columns=weekday_names,
+    fill_value=0
+)
+
+# 1월 → 12월 순서
+heatmap_data = heatmap_data.sort_index()
+
+# 히트맵
+fig5 = go.Figure(
+    data=go.Heatmap(
+        x=weekday_names,
+        y=[f"{month}월" for month in heatmap_data.index],
+        z=heatmap_data.values,
+        colorscale="Blues",
+        colorbar=dict(
+            title="일관객 합계"
+        ),
+        hovertemplate=(
+            "월: %{y}"
+            "<br>요일: %{x}"
+            "<br>일관객 합계: %{z:,}명"
+            "<extra></extra>"
+        )
+    )
+)
+
+fig5.update_layout(
+    title="월 × 요일별 10위권 일관객 합계",
+    xaxis_title="요일",
+    yaxis_title="월"
+)
+
+st.plotly_chart(
+    fig5,
+    use_container_width=True
+)
+
+st.markdown("**이 그래프로 알 수 있는 것**")
+st.caption(
+    "어떤 달의 어떤 요일에 영화 관객이 많이 몰렸는지 한눈에 비교할 수 있습니다."
+)
+
+
+# ==================================================
 # 앞으로 추가할 그래프 영역
 # ==================================================
 
 st.divider()
 
-st.header("5. 다음 그래프")
+st.header("6. 다음 그래프")
 
 st.info(
     "앞으로 새로운 그래프를 이곳에 추가합니다."
